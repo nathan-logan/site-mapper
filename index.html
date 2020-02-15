@@ -16,8 +16,7 @@
             <button id="clear">reset</button>
             <h3>choose shape</h3>
             <div class="shapeButtons">
-                <button id="shapeButton" class="active" value="polygon">polygon</button>
-                <button id="shapeButton" value="rectangle">rectangle</button>
+                <button id="shapeButton" class="active" value="polygon">draw walls</button>
                 <button id="shapeButton" value="marker">add markers</button>
                 <button id="shapeButton" value="doorway">add doorways</button>
             </div>
@@ -38,7 +37,6 @@
             .attr('fill', 'none');
         let currentShapeType = 'polygon';
         let drawingPoly = true;
-        let drawingRect = false;
         let rotation = 180;
         let shapes = [];
 
@@ -48,22 +46,21 @@
             let containerBoundingRect = document.getElementById('myDrawing').getBoundingClientRect();
             const { top, right, bottom, left } = containerBoundingRect;
             // make sure that the click is inside the bounds of the frame:
-            console.log(currentShapeType)
             if (x > left && x < right && y > top && y < bottom) {
-                let offsetX = containerBoundingRect.x
-                let offsetY = containerBoundingRect.y
+                let offsetX = containerBoundingRect.x;
+                let offsetY = containerBoundingRect.y;
                 switch (currentShapeType) {
                     case 'marker':
                         createNewMarker(x, offsetX, y, offsetY);
                         return;
                     case 'polygon':
-                        if (!drawingPoly && shapes.length) createNewPolygon();
+                        if (!drawingPoly && shapes.length) {
+                            drawingPoly = true;
+                            createNewPolygon()
+                        }
                         return;
                     case 'doorway':
                         createDoorway(x, offsetX, y, offsetY);
-                        return;
-                    case 'rectangle':
-                        if (!drawingRect) createNewRectangle();
                         return;
                 }
             }
@@ -130,9 +127,9 @@
 
 
         const createDoorway = (x, offsetX, y, offsetY) => {
+            drawingPoly = false;
             let trueX = (x - offsetX) - 10;
             let trueY = (y - offsetY) - 10;
-            drawingPoly = false;
             if (shapes.length === 0) parentDiv.innerHTML = '';
             let newDiv = createNewDiv();
             let newDoorway = new SVG(newDiv.id)
@@ -146,27 +143,6 @@
                     stroke: '#000'
                 })
             shapes.push(newDoorway);
-        }
-
-        const createNewRectangle = () => {
-            drawingPoly = false;
-            drawingRect = true;
-            if (shapes.length === 0) parentDiv.innerHTML = '';
-            let newDiv = createNewDiv();
-            let newRectangle = new SVG(newDiv.id)
-                .size('100%', '100%')
-                .rect()
-                .draw()
-                .attr({
-                    fill: 'none',
-                    'stroke-width': 2,
-                    stroke: 'black'
-                })
-            newRectangle.on('drawstop', () => {
-                newRectangle.draw('done');
-                drawingRect = false
-                shapes.push(newRectangle);
-            })
         }
 
         document.getElementById('undo').addEventListener('click', () => {
