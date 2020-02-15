@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="buttons">
+            <button id="save">save</button>
+            <button id="undo">undo</button>
+            <button id="clear">clear</button>
+            <h3>choose shape</h3>
+            <div class="shapeButtons">
+                <button id="polygon">polygon</button>
+                <button id="rectangle">rectangle</button>
+                <button id="circle">add new marker</button>
+                <button id="doorway">add a doorway</button>
+            </div>
+        </div>
+        <h1></h1>
+        <div id="myDrawing"></div>
+    </div>
+
+    <script src="svgfolder.js/dist/svg.js"></script>
+    <script src="svg.drawfolder.js/dist/svg.draw.js"></script>
+    <script>
+        let markerToggled = true;
+        let currentShape = new SVG('myDrawing').size('100%', '100%')
+            .polygon().draw({ snapToGrid: 20 }).attr('stroke-width', 1).attr('fill', 'none')
+        let mainDiv = document.getElementById('myDrawing');
+        let clickCoordinates = {};
+        let circle = null;
+        let points = [];
+        let shapes = [];
+
+        function checkMouseCoordinates(event) {
+            clickCoordinates = { x: event.clientX, y: event.clientY };
+            // get x,y pos of the frame:
+            let svgContainerCoords = document.getElementById('myDrawing').getBoundingClientRect();
+            let { x, y } = clickCoordinates;
+            const { top, right, bottom, left } = svgContainerCoords;
+            console.log(top, bottom)
+            console.log(left, right)
+            console.log(`clicked at: x${x}, y${y}`)
+            // check if a click is inside the frame:
+            if (x > left && x < right && y > top && y < bottom) {
+                offsetX = svgContainerCoords.x
+                offsetY = svgContainerCoords.y
+                let id = `shape-${shapes.length + 1}`;
+                if (markerToggled) {
+                    console.log(`creating a marker at: x${x}, y${y}, with id of ${id}`);
+                    createCircle(x, y, id, offsetX, offsetY);
+                }
+            }
+        }
+        document.addEventListener("click", checkMouseCoordinates);
+
+        const createCircle = (x, y, id, offsetX, offsetY) => {
+            if (markerToggled) {
+                let g = document.createElement('div');
+                g.id = id;
+                g.className = 'shape';
+                mainDiv.appendChild(g);
+                currentShape = new SVG(id)
+                    .size('100%', '100%')
+                    .circle()
+                    .radius(10)
+                    .draw()
+                    .move(x - offsetX - 10, y - offsetY - 10)
+                    .attr('fill', '#f06')
+            }
+        }
+
+
+        document.getElementById('save').addEventListener('click', async () => {
+            let newDiv = await saveShape();
+            currentShape = new SVG(newDiv)
+                .size('100%', '100%')
+                .polygon()
+                .draw({ snapToGrid: 20 })
+                .attr('stroke-width', 1)
+                .attr('fill', 'none');
+        })
+        document.getElementById('circle').addEventListener('click', (e) => {
+            toggleMarker();
+        })
+
+        const toggleMarker = () => {
+            markerToggled = !markerToggled;
+            document.getElementById('circle').classList.toggle('active');
+            return
+            let newShapeId = `shape-${shapes.length + 1}`;
+            if (shapes.length == 0) {
+                mainDiv.innerHTML = ''
+                let g = document.createElement('div');
+                g.id = newShapeId;
+                g.className += 'shape';
+                mainDiv.appendChild(g)
+                console.log(newShapeId)
+            };
+
+
+        }
+
+        const saveShape = () => {
+            console.log("save shape!!!!")
+            currentShape.draw('done');
+            currentShape.attr('stroke-width', 2).attr('stroke', 'green');
+            console.log('currentShape: ', currentShape);
+            shapes.push(currentShape);
+            let newId = `shape-${shapes.length + 1}`;
+            let g = document.createElement('div');
+            g.id = newId;
+            g.className = 'shape';
+            mainDiv.appendChild(g);
+            document.removeEventListener('keydown', currentShape);
+            return newId;
+        }
+
+        document.getElementById('clear').addEventListener('click', () => {
+            currentShape.draw('cancel');
+            document.getElementById('myDrawing').innerHTML = '';
+            currentShape = new SVG('myDrawing').size('100%', '100%')
+                .polygon().draw({ snapToGrid: 20 }).attr('stroke-width', 1).attr('fill', 'none');
+        })
+
+        currentShape.on('drawstart', (e) => {
+            console.log("draw start!!")
+            points.push(e.detail.p);
+            document.addEventListener('keydown', (e) => {
+                if (e.keyCode == 13) {
+                    currentShape.draw('stop');
+                }
+            });
+        });
+
+        currentShape.on('drawstop', function () {
+            console.log("DRAW STOP")
+            saveShape();
+        });
+
+        currentShape.on('drawpoint', (e) => {
+            points.push(e.detail.p);
+            return;
+        })
+
+
+    </script>
+</body>
+
+</html>
