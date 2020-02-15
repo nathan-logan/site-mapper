@@ -14,198 +14,170 @@
             <button id="save">save</button>
             <button id="undo">undo</button>
             <button id="clear">reset</button>
-            <form action="">
-                <label for="uploadFile">doesnt work :D - upload a sitemap svg</label>
-                <input type="file" name="uploadFile" id="uploadFile" accept="image/svg+xml">
-            </form>
-            <h3>choose shape</h3>
             <div class="shapeButtons">
-                <button id="shapeButton" class="active" value="polygon">draw walls</button>
+                <button id="shapeButton" value="polygon">draw walls</button>
+                <button id="shapeButton" value="rect">draw rectangle</button>
                 <button id="shapeButton" value="marker">add markers</button>
                 <button id="shapeButton" value="doorway">add doorways</button>
             </div>
         </div>
-        <h1></h1>
-        <div id="myDrawing"></div>
+        <div id="drawing"></div>
     </div>
 
     <script src="svg.js/dist/svg.js"></script>
     <script src="svg.draw.js/dist/svg.draw.js"></script>
     <script src="dom-to-image/dist/dom-to-image.min.js"></script>
     <script>
-        let parentDiv = document.getElementById('myDrawing');
-        let canvas = new SVG('myDrawing')
-            .size('100%', '100%')
-            .polygon()
-            .draw({ snapToGrid: 20 })
-            .attr('stroke-width', 1)
-            .attr('fill', 'none');
-        let currentShapeType = 'polygon';
-        let drawingPoly = true;
-        let rotation = 180;
-        let shapes = [];
+        document.addEventListener('DOMContentLoaded', () => {
 
-        function filter(node) {
-            return (node.tagName !== 'i');
-        }
+            let activeShape;
 
-        document.getElementById('save').addEventListener('click', () => {
-            // convert to svg and download
-            domtoimage.toSvg(parentDiv, { filter, style: { position: 'absolute', top: 0, left: 0, backgroundColor: "red, url('grid.png')" } })
-                .then(function (dataUrl) {
-                    var link = document.createElement('a');
-                    document.body.appendChild(link)
-                    link.href = dataUrl;
-                    link.download = 'image.svg';
-                    link.click();
-                    document.body.removeChild(link)
-                });
-        })
+            let shapes = [];
 
-        const checkMouseCoordinates = (event) => {
-            let x = event.clientX;
-            let y = event.clientY;
-            let containerBoundingRect = document.getElementById('myDrawing').getBoundingClientRect();
-            const { top, right, bottom, left } = containerBoundingRect;
-            // make sure that the click is inside the bounds of the frame:
-            if (x > left && x < right && y > top && y < bottom) {
-                let offsetX = containerBoundingRect.x;
-                let offsetY = containerBoundingRect.y;
-                switch (currentShapeType) {
-                    case 'marker':
-                        createNewMarker(x, offsetX, y, offsetY);
-                        return;
-                    case 'polygon':
-                        if (!drawingPoly && shapes.length) {
-                            drawingPoly = true;
-                            createNewPolygon()
-                        }
-                        return;
-                    case 'doorway':
-                        createDoorway(x, offsetX, y, offsetY);
-                        return;
-                }
-            }
-        }
-        document.addEventListener("click", checkMouseCoordinates);
+            let shape, drawing = new SVG('drawing').size('100%', '100%');
 
-        // handle clicking the shape buttons
-        let shapeButtons = document.querySelectorAll('button[id=shapeButton]');
-        shapeButtons.forEach(btn => {
-            btn.addEventListener('click', event => {
-                const value = event.target.value
-                // remove active class from other buttons if different one is clicked
-                if (currentShapeType != value) {
-                    shapeButtons.forEach(btn => btn.classList.remove('active'))
-                }
-                if (currentShapeType === value) return;
-                currentShapeType = value;
-                document.querySelector(`button[value=${currentShapeType}`).classList.toggle('active');
-            })
-        })
-
-        // helper to create a new div for a shape
-        const createNewDiv = () => {
-            let newDiv = document.createElement('div');
-            newDiv.id = shapes.length + 1;
-            parentDiv.appendChild(newDiv);
-            return newDiv;
-        }
-
-        const createNewMarker = (x, offsetX, y, offsetY) => {
-            drawingPoly = false;
-            if (shapes.length === 0) parentDiv.innerHTML = '';
-            let newDiv = createNewDiv();
-            let newMarker = new SVG(newDiv.id)
-                .size('100%', '100%')
-                .circle()
-                .draw()
-                .radius(8)
-                .move((x - offsetX) - 10, (y - offsetY) - 10)
-                .attr('fill', '#5D69C5')
-            newMarker.draw('stop');
-            shapes.push(newMarker);
-        }
-
-        const createNewPolygon = () => {
-            drawingPoly = true;
-            let newDiv = createNewDiv();
-            newPoly = new SVG(newDiv.id)
-                .size('100%', '100%')
-                .polygon()
-                .draw({ snapToGrid: 20 })
-                .attr('stroke-width', 1)
-                .attr('fill', 'none')
-            newPoly.on('drawstart', () => {
-                document.addEventListener('keydown', (event) => {
-                    if (event.keyCode == 13) {
-                        newPoly.draw('done');
-                        shapes.push(newPoly);
-                        drawingPoly = false
+            let buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', event => {
+                    const value = event.target.value
+                    const id = event.target.id
+                    // remove active class from other buttons if different one is clicked
+                    if (activeShape != value) {
+                        buttons.forEach(btn => btn.classList.remove('active'))
                     }
-                });
-            });
-        }
+                    activeShape = value;
 
-
-        const createDoorway = (x, offsetX, y, offsetY) => {
-            drawingPoly = false;
-            let trueX = (x - offsetX) - 10;
-            let trueY = (y - offsetY) - 10;
-            if (shapes.length === 0) parentDiv.innerHTML = '';
-            let newDiv = createNewDiv();
-            let newDoorway = new SVG(newDiv.id)
-                .size('100%', '100%')
-                .path("M0,50 a1,1 0 0,0 20,0")
-                .rotate(rotation, x - offsetX - 1, trueY + 5)
-                .move(trueX, trueY)
-                .attr({
-                    fill: 'none',
-                    strokeWidth: 1,
-                    stroke: '#000'
+                    switch (id) {
+                        case 'undo':
+                            undoShape();
+                            return;
+                        case 'reset':
+                            resetCanvas();
+                            return;
+                        case 'save':
+                            saveCanvas();
+                            return;
+                    }
+                    if (activeShape) document.querySelector(`button[value=${activeShape}`).classList.toggle('active');
+                    switch (value) {
+                        case 'polygon':
+                            shape = drawing.polygon().draw({ snapToGrid: 20 }).attr('stroke-width', 1).attr('fill', 'none');
+                            shape.on('drawstart', () => {
+                                document.addEventListener('keydown', function (e) {
+                                    if (e.keyCode == 13) {
+                                        shapes.push(shape);
+                                        shape.draw('stop');
+                                        document.querySelector(`button[value=${activeShape}]`).classList.toggle('active');
+                                        activeShape = null;
+                                    }
+                                });
+                            })
+                            return;
+                        case 'marker':
+                            shape = drawing.circle().draw({ snapToGrid: 20 }).attr('stroke-width', 1).attr('fill', 'none');
+                            return;
+                        case 'doorway':
+                            shape = drawing.attr('stroke-width', 1).attr('fill', 'none');
+                            return;
+                        case 'rect':
+                            shape = drawing.rect().attr('stroke-width', 1).attr('fill', 'none');
+                            return;
+                    }
                 })
-            shapes.push(newDoorway);
-        }
+            })
 
-        document.getElementById('undo').addEventListener('click', () => {
-            if (shapes.length) undoShape();
-        })
-        document.getElementById('clear').addEventListener('click', () => resetCanvas())
-
-        const undoShape = () => {
-            console.log(shapes)
-            let shapeToUndo = shapes[shapes.length - 1];
-            document.getElementById(shapeToUndo.node.id).remove();
-            shapes.splice(shapes.indexOf(shapes.length - 1), 1)
-            if (!shapes.length) {
-                resetCanvas();
-            }
-        }
-
-        const resetCanvas = () => {
-            parentDiv.innerHTML = '';
-            canvas = new SVG('myDrawing')
-                .size('100%', '100%')
-                .polygon()
-                .draw({ snapToGrid: 20 })
-                .attr('stroke-width', 1)
-                .attr('fill', 'none');
-            shapeButtons.forEach(btn => btn.classList.remove('active'));
-            document.querySelector('button[value=polygon]').classList.add('active');
-            currentShapeType = 'polygon';
-            shapes = [];
-        }
-
-        canvas.on('drawstart', () => {
-            document.addEventListener('keydown', (event) => {
-                if (event.keyCode == 13) {
-                    canvas.draw('done');
-                    shapes.push(canvas);
-                    drawingPoly = false;
+            drawing.on('mousedown', (e) => {
+                if (activeShape === 'rect') {
+                    shape && shape.draw(e, { snapToGrid: 20 });
                 }
             });
-        });
 
+            drawing.on('mouseup', (e) => {
+                if (shape && activeShape === 'rect') {
+                    shape.draw('stop');
+                    // get svg string
+                    // console.log(shape.svg());
+                    document.querySelector(`button[value=${activeShape}]`).classList.toggle('active');
+                    console.log(`pushing ${shape.type}`)
+                    shapes.push(shape);
+                    shape = null;
+                    activeShape = null;
+                }
+                document.removeEventListener('keydown', () => { })
+            });
+
+            drawing.on('click', (event) => {
+                let { offsetX, offsetY } = event;
+                if (activeShape === 'marker' || activeShape === 'doorway') {
+                    placeIconAtCursor(offsetX - 10, offsetY - 10);
+                    return;
+                }
+            });
+
+            const placeIconAtCursor = (x, y) => {
+                if (activeShape === 'marker') {
+                    shape = drawing
+                        .circle()
+                        .draw()
+                        .radius(10)
+                        .move(x, y)
+                        .attr({
+                            'fill': '#5D69C5',
+                            'stroke-width': 0,
+                            stroke: '#000'
+                        })
+                    console.log(`pushing ${shape.type}`)
+                    shapes.push(shape);
+                    shape.draw('stop');
+                    shape = null;
+                    return;
+                }
+                if (activeShape === 'doorway') {
+                    shape = drawing
+                        .path("M0,50 a1,1 0 0,0 20,0")
+                        .rotate(180, x + 9, y + 5)
+                        .move(x, y)
+                        .attr({
+                            fill: 'none',
+                            'stroke-width': 1.5,
+                            stroke: '#000'
+                        })
+                    console.log(`pushing ${shape.type}`)
+                    shapes.push(shape);
+                    shape = null;
+                    return;
+                }
+            }
+
+            // undo the most recent shape
+            const undoShape = () => {
+                if (!shapes.length) {
+                    return;
+                }
+                let shapeToUndo = shapes[shapes.length - 1];
+                document.getElementById(shapeToUndo.node.id).remove();
+                shapes.splice(shapes.indexOf(shapes.length - 1), 1)
+            }
+
+            // cleanup the canvas
+            const resetCanvas = () => {
+                document.getElementById('drawing').innerHTML = '';
+                buttons.forEach(btn => btn.classList.remove('active'));
+            }
+
+            // export the current canvas as a SVG file
+            const saveCanvas = () => {
+                if (shapes.length) {
+                    domtoimage.toSvg(document.getElementById('drawing'), { style: { position: 'absolute', top: 0, left: 0 } })
+                        .then(function (dataUrl) {
+                            var link = document.createElement('a');
+                            link.href = dataUrl;
+                            link.download = 'site-map.svg';
+                            link.click();
+                        });
+                }
+            }
+        });
     </script>
 </body>
 
