@@ -14,6 +14,10 @@
             <button id="save">save</button>
             <button id="undo">undo</button>
             <button id="clear">reset</button>
+            <form action="">
+                <label for="uploadFile">doesnt work :D - upload a sitemap svg</label>
+                <input type="file" name="uploadFile" id="uploadFile" accept="image/svg+xml">
+            </form>
             <h3>choose shape</h3>
             <div class="shapeButtons">
                 <button id="shapeButton" class="active" value="polygon">draw walls</button>
@@ -27,6 +31,7 @@
 
     <script src="svg.js/dist/svg.js"></script>
     <script src="svg.draw.js/dist/svg.draw.js"></script>
+    <script src="dom-to-image/dist/dom-to-image.min.js"></script>
     <script>
         let parentDiv = document.getElementById('myDrawing');
         let canvas = new SVG('myDrawing')
@@ -39,6 +44,23 @@
         let drawingPoly = true;
         let rotation = 180;
         let shapes = [];
+
+        function filter(node) {
+            return (node.tagName !== 'i');
+        }
+
+        document.getElementById('save').addEventListener('click', () => {
+            // convert to svg and download
+            domtoimage.toSvg(parentDiv, { filter, style: { position: 'absolute', top: 0, left: 0, backgroundColor: "red, url('grid.png')" } })
+                .then(function (dataUrl) {
+                    var link = document.createElement('a');
+                    document.body.appendChild(link)
+                    link.href = dataUrl;
+                    link.download = 'image.svg';
+                    link.click();
+                    document.body.removeChild(link)
+                });
+        })
 
         const checkMouseCoordinates = (event) => {
             let x = event.clientX;
