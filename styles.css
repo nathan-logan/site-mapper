@@ -11,8 +11,8 @@ html,body {
 #drawing {
     border: 2px solid #333;
     border-radius: 7px;
-    width: 600px;
-    height: 600px;
+    width: 98vw;
+    height: 80vh;
     background-image: url('grid.png');
     background-color: #fff;
     position: relative;
@@ -61,4 +61,9 @@ img {
     position: absolute;
     top: 0;
     left: 0;
+}
+
+#confirm {
+    display: none;
+    background: green;
 }

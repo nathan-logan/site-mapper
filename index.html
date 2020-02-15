@@ -13,9 +13,10 @@
         <div class="buttons">
             <button id="save">save</button>
             <button id="undo">undo</button>
-            <button id="clear">reset</button>
+            <button id="reset">reset</button>
             <div class="shapeButtons">
                 <button id="shapeButton" value="polygon">draw walls</button>
+                <button id="confirm">confirm</button>
                 <button id="shapeButton" value="rect">draw rectangle</button>
                 <button id="shapeButton" value="marker">add markers</button>
                 <button id="shapeButton" value="doorway">add doorways</button>
@@ -45,7 +46,7 @@
                     if (activeShape != value) {
                         buttons.forEach(btn => btn.classList.remove('active'))
                     }
-                    activeShape = value;
+                    if (activeShape === value) return;
 
                     switch (id) {
                         case 'undo':
@@ -57,18 +58,23 @@
                         case 'save':
                             saveCanvas();
                             return;
+                        case 'confirm':
+                            confirmCurrentShape();
+                            return;
                     }
+
+                    activeShape = value;
+
                     if (activeShape) document.querySelector(`button[value=${activeShape}`).classList.toggle('active');
                     switch (value) {
                         case 'polygon':
+                            document.querySelector('button[value=polygon]').style.display = 'none';
+                            document.querySelector('button[id=confirm]').style.display = 'block';
                             shape = drawing.polygon().draw({ snapToGrid: 20 }).attr('stroke-width', 1).attr('fill', 'none');
                             shape.on('drawstart', () => {
                                 document.addEventListener('keydown', function (e) {
                                     if (e.keyCode == 13) {
-                                        shapes.push(shape);
-                                        shape.draw('stop');
-                                        document.querySelector(`button[value=${activeShape}]`).classList.toggle('active');
-                                        activeShape = null;
+                                        confirmCurrentShape();
                                     }
                                 });
                             })
@@ -95,10 +101,7 @@
             drawing.on('mouseup', (e) => {
                 if (shape && activeShape === 'rect') {
                     shape.draw('stop');
-                    // get svg string
-                    // console.log(shape.svg());
                     document.querySelector(`button[value=${activeShape}]`).classList.toggle('active');
-                    console.log(`pushing ${shape.type}`)
                     shapes.push(shape);
                     shape = null;
                     activeShape = null;
@@ -126,7 +129,6 @@
                             'stroke-width': 0,
                             stroke: '#000'
                         })
-                    console.log(`pushing ${shape.type}`)
                     shapes.push(shape);
                     shape.draw('stop');
                     shape = null;
@@ -142,10 +144,21 @@
                             'stroke-width': 1.5,
                             stroke: '#000'
                         })
-                    console.log(`pushing ${shape.type}`)
                     shapes.push(shape);
                     shape = null;
                     return;
+                }
+            }
+
+            // complete the current polygon shape
+            const confirmCurrentShape = () => {
+                if (shape) {
+                    document.querySelector('button[id=confirm]').style.display = 'none';
+                    document.querySelector('button[value=polygon]').style.display = 'block';
+                    shape.draw('done');
+                    shapes.push(shape);
+                    activeShape = null;
+                    shape = null;
                 }
             }
 
@@ -161,8 +174,8 @@
 
             // cleanup the canvas
             const resetCanvas = () => {
-                document.getElementById('drawing').innerHTML = '';
                 buttons.forEach(btn => btn.classList.remove('active'));
+                drawing.clear();
             }
 
             // export the current canvas as a SVG file
