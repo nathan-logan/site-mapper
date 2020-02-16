@@ -47,7 +47,8 @@
                     const value = event.target.value
                     const id = event.target.id
                     // remove active class from other buttons if different one is clicked
-                    if (activeShape != value) {
+                    // but don't remove active if a utility button is clicked
+                    if (activeShape != value && id !== 'undo' && id !== 'reset' && id !== 'save') {
                         buttons.forEach(btn => btn.classList.remove('active'))
                     }
                     // early return if it's the same button being clicked
