@@ -11,15 +11,19 @@
 <body>
     <div class="container">
         <div class="buttons">
-            <button id="save">save</button>
-            <button id="undo">undo</button>
-            <button id="reset">reset</button>
+            <button class="utilButton" id="save">save</button>
+            <button class="utilButton" id="undo">undo</button>
+            <button class="utilButton" id="reset">reset</button>
             <div class="shapeButtons">
-                <button id="shapeButton" value="polygon">draw walls</button>
-                <button id="confirm">confirm</button>
-                <button id="shapeButton" value="rect">draw rectangle</button>
-                <button id="shapeButton" value="marker">add markers</button>
-                <button id="shapeButton" value="doorway">add doorways</button>
+                <button class="shapeButton" id="shapeButton" value="polygon">draw walls</button>
+                <button class="utilButton" id="confirm">confirm</button>
+                <button class="shapeButton" id="shapeButton" value="rect">draw rectangle</button>
+                <button class="shapeButton" id="shapeButton" value="marker">add markers</button>
+                <button class="shapeButton" id="shapeButton" value="doorway">add doorways</button>
+                <div id="rotationButtons">
+                    <button class="utilButton" id="add90">Rotate Right</button>
+                    <button class="utilButton" id="minus90">Rotate Left</button>
+                </div>
             </div>
         </div>
         <div id="drawing"></div>
@@ -40,28 +44,16 @@
             // init a new drawing 
             let shape, drawing = new SVG('drawing').size('100%', '100%');
 
-            // add click event listeners to every button
-            let buttons = document.querySelectorAll('button');
-            buttons.forEach(btn => {
+            // doorway rotation 
+            let doorwayRotation = 180;
+
+            // add click event listeners to utility buttons
+            let utilButtons = document.querySelectorAll('.utilButton');
+            utilButtons.forEach(btn => {
                 btn.addEventListener('click', event => {
-                    const value = event.target.value
+
                     const id = event.target.id
-                    // remove active class from other buttons if different one is clicked
-                    // but don't remove active if a utility button is clicked
-                    if (activeShape != value && id !== 'undo' && id !== 'reset' && id !== 'save') {
-                        buttons.forEach(btn => btn.classList.remove('active'))
-                    }
-                    // early return if it's the same button being clicked
-                    if (activeShape === value) return;
 
-                    // if there's currently a shape being drawn, finish it
-                    if (shape) {
-                        // fix bug with switching to rectangle
-                        if (activeShape === 'rect') shape.draw('cancel');
-                        confirmCurrentShape();
-                    }
-
-                    // top buttons
                     switch (id) {
                         case 'undo':
                             undoShape();
@@ -75,8 +67,46 @@
                         case 'confirm':
                             confirmCurrentShape();
                             return;
+                        case 'add90':
+                            doorwayRotation += 90;
+                            return;
+                        case 'minus90':
+                            doorwayRotation -= 90;
+                            return;
+                    }
+                })
+            })
+
+            // add click event listeners to shape
+            let shapeButtons = document.querySelectorAll('.shapeButton');
+            shapeButtons.forEach(btn => {
+                btn.addEventListener('click', event => {
+
+                    const value = event.target.value
+
+                    // early return if it's the same button being clicked
+                    if (activeShape === value) return;
+
+                    // remove active class from other buttons if different one is clicked
+                    if (activeShape != value) {
+                        shapeButtons.forEach(btn => btn.classList.remove('active'));
+                        if (activeShape === 'doorway') {
+                            document.getElementById('rotationButtons').style.display = 'none';
+                        }
                     }
 
+                    // if there's currently a shape being drawn, finish it
+                    if (shape) {
+                        // revert shape if going from marker -> doorway without placing anything
+                        if (activeShape === 'marker' || activeShape === 'doorway') shape = null;
+                        // fix bug with switching to rectangle
+                        if (activeShape === 'rect') {
+                            shape.draw('cancel');
+                        }
+                        confirmCurrentShape();
+                    }
+
+                    // update current active shape
                     activeShape = value;
 
                     // add active class to button
@@ -99,12 +129,16 @@
                             })
                             return;
                         case 'marker':
+                            if (shape) shape = null;
                             shape = drawing.circle().draw({ snapToGrid: 20 }).attr('stroke-width', 1).attr('fill', 'none');
                             return;
                         case 'doorway':
+                            if (shape) shape = null;
+                            document.getElementById('rotationButtons').style.display = 'flex';
                             shape = drawing.attr('stroke-width', 1).attr('fill', 'none');
                             return;
                         case 'rect':
+                            if (shape) shape = null;
                             shape = drawing.rect().attr('stroke-width', 1).attr('fill', 'none');
                             return;
                     }
@@ -160,7 +194,7 @@
                 if (activeShape === 'doorway') {
                     shape = drawing
                         .path("M0,50 a1,1 0 0,0 20,0")
-                        .rotate(180, x + 9, y + 5)
+                        .rotate(doorwayRotation, x + 9, y + 5)
                         .move(x, y)
                         .attr({
                             fill: 'none',
@@ -198,7 +232,7 @@
 
             // cleanup the canvas
             const resetCanvas = () => {
-                buttons.forEach(btn => btn.classList.remove('active'));
+                shapeButtons.forEach(btn => btn.classList.remove('active'));
                 drawing.clear();
             }
 

@@ -67,3 +67,7 @@ img {
     display: none;
     background: green;
 }
+
+#rotationButtons {
+    display: none;
+}
