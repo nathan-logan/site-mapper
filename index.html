@@ -31,12 +31,16 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
 
+            // the current shape type being drawn
             let activeShape;
 
+            // where all of the individual svg shapes go
             let shapes = [];
 
+            // init a new drawing 
             let shape, drawing = new SVG('drawing').size('100%', '100%');
 
+            // add click event listeners to every button
             let buttons = document.querySelectorAll('button');
             buttons.forEach(btn => {
                 btn.addEventListener('click', event => {
@@ -46,8 +50,17 @@
                     if (activeShape != value) {
                         buttons.forEach(btn => btn.classList.remove('active'))
                     }
+                    // early return if it's the same button being clicked
                     if (activeShape === value) return;
 
+                    // if there's currently a shape being drawn, finish it
+                    if (shape) {
+                        // fix bug with switching to rectangle
+                        if (activeShape === 'rect') shape.draw('cancel');
+                        confirmCurrentShape();
+                    }
+
+                    // top buttons
                     switch (id) {
                         case 'undo':
                             undoShape();
@@ -65,13 +78,18 @@
 
                     activeShape = value;
 
+                    // add active class to button
                     if (activeShape) document.querySelector(`button[value=${activeShape}`).classList.toggle('active');
+
+                    // switch to handle shape buttons
                     switch (value) {
                         case 'polygon':
+                            // show confirm button in place of walls button 
                             document.querySelector('button[value=polygon]').style.display = 'none';
                             document.querySelector('button[id=confirm]').style.display = 'block';
                             shape = drawing.polygon().draw({ snapToGrid: 20 }).attr('stroke-width', 1).attr('fill', 'none');
                             shape.on('drawstart', () => {
+                                // listen for enter key press
                                 document.addEventListener('keydown', function (e) {
                                     if (e.keyCode == 13) {
                                         confirmCurrentShape();
@@ -92,12 +110,14 @@
                 })
             })
 
+            // allow click and drag to draw rectangle
             drawing.on('mousedown', (e) => {
                 if (activeShape === 'rect') {
                     shape && shape.draw(e, { snapToGrid: 20 });
                 }
             });
 
+            // end click and draw for rectangle
             drawing.on('mouseup', (e) => {
                 if (shape && activeShape === 'rect') {
                     shape.draw('stop');
@@ -109,6 +129,7 @@
                 document.removeEventListener('keydown', () => { })
             });
 
+            // listen for a click on the canvas
             drawing.on('click', (event) => {
                 let { offsetX, offsetY } = event;
                 if (activeShape === 'marker' || activeShape === 'doorway') {
@@ -117,6 +138,7 @@
                 }
             });
 
+            //  place the type of icon at the location of the click
             const placeIconAtCursor = (x, y) => {
                 if (activeShape === 'marker') {
                     shape = drawing
@@ -155,6 +177,7 @@
                 if (shape) {
                     document.querySelector('button[id=confirm]').style.display = 'none';
                     document.querySelector('button[value=polygon]').style.display = 'block';
+                    document.querySelector('button[value=polygon]').style.background = '#333';
                     shape.draw('done');
                     shapes.push(shape);
                     activeShape = null;
@@ -178,7 +201,7 @@
                 drawing.clear();
             }
 
-            // export the current canvas as a SVG file
+            // export the current canvas as an SVG file
             const saveCanvas = () => {
                 if (shapes.length) {
                     domtoimage.toSvg(document.getElementById('drawing'), { style: { position: 'absolute', top: 0, left: 0 } })
