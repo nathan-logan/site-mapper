@@ -3,6 +3,7 @@ html,body {
 }
 
 .container {
+    margin-top: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -19,48 +20,23 @@ html,body {
     top: 30px;
 }
 
-.shape {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-}
-
-svg {
-    position: absolute;
-}
-
-.shapeButtons {
-    display: flex;
-    align-items: center;
-}
-
 .rotationButtons {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-button {
-    width: 125px;
-    height: 45px;
-    text-transform: uppercase;
-    font-weight: 600;
-    background: #333;
-    color: #fff;
+.btn {
+    position: relative;
+    padding: 0.4rem 1rem;
+    width: 20px;
+    height: 20px;
+    background: #E1E1E1;
+    border: 1px solid #ADADAD;
 }
 
-button.active {
-    background: green;
-}
-
-img {
-    width: 200px;
-    height: 200px;
-    position: absolute;
-    top: 0;
-    left: 0;
+.btn.active {
+    border: 3px solid green;
 }
 
 #confirm {

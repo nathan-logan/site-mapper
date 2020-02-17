@@ -11,19 +11,25 @@
 <body>
     <div class="container">
         <div class="buttons">
-            <button class="utilButton" id="save">save</button>
-            <button class="utilButton" id="undo">undo</button>
-            <button class="utilButton" id="reset">reset</button>
+            <div class="utilButtons">
+                <img class="btn utilButton" id="save" src="icon_save.gif" alt="icon-save">
+                <img class="btn utilButton" id="undo" src="undo.gif" alt="icon-undo">
+                <img class="btn utilButton" id="reset" src="icon_new.gif" alt="icon-new">
+            </div>
             <div class="shapeButtons">
-                <button class="shapeButton" id="shapeButton" value="polygon">draw walls</button>
-                <button class="utilButton" id="confirm">confirm</button>
-                <button class="shapeButton" id="shapeButton" value="rect">draw rectangle</button>
-                <button class="shapeButton" id="shapeButton" value="marker">add markers</button>
-                <button class="shapeButton" id="shapeButton" value="doorway">add doorways</button>
+                <!-- <button class="shapeButton" id="shapeButton" value="polygon">draw walls</button> -->
+                <!-- <button class="btn utilButton" id="confirm">confirm</button> -->
+                <img class="btn shapeButton" id="line" src="icon-line.gif" alt="icon-line">
+                <img class="btn shapeButton" id="line-red" src="icon-red-line.gif" alt="icon-red-line">
+                <img class="btn shapeButton" id="rect" value="rect" src="icon-rect.gif" alt="icon-rect">
+                <img class="btn shapeButton" id="circle-blue" src="icon-blue-circle.gif" alt="icon-blue-circle">
+                <img class="btn shapeButton" id="circle-black" src="icon-black-circle.gif" alt="icon-black-circle">
+                <img class="btn shapeButton" id="cross" src="icon-cross.gif" alt="icon-black-circle">
+                <!-- <button class="shapeButton" id="shapeButton" value="doorway">add doorways</button>
                 <div id="rotationButtons">
                     <button class="utilButton" id="add90">Rotate Right</button>
                     <button class="utilButton" id="minus90">Rotate Left</button>
-                </div>
+                </div> -->
             </div>
         </div>
         <div id="drawing"></div>
@@ -82,7 +88,7 @@
             shapeButtons.forEach(btn => {
                 btn.addEventListener('click', event => {
 
-                    const value = event.target.value
+                    const value = event.target.id
 
                     // early return if it's the same button being clicked
                     if (activeShape === value) return;
@@ -97,20 +103,20 @@
 
                     // if there's currently a shape being drawn, finish it
                     if (shape) {
-                        // revert shape if going from marker -> doorway without placing anything
-                        if (activeShape === 'marker' || activeShape === 'doorway') shape = null;
-                        // fix bug with switching to rectangle
+                        // this fixes a bug when switching between red and black lines
+                        if (shape && activeShape === 'line' && value === 'line-red' || activeShape === 'line-red' && value === 'line') shape.draw('cancel');
                         if (activeShape === 'rect') {
                             shape.draw('cancel');
                         }
-                        confirmCurrentShape();
+                        if (shape) shape = null;                        // fix bug with switching to rectangle
+                        // confirmCurrentShape();
                     }
 
                     // update current active shape
                     activeShape = value;
 
                     // add active class to button
-                    if (activeShape) document.querySelector(`button[value=${activeShape}`).classList.toggle('active');
+                    if (activeShape) document.querySelector(`img[id=${activeShape}`).classList.toggle('active');
 
                     // switch to handle shape buttons
                     switch (value) {
@@ -128,32 +134,55 @@
                                 });
                             })
                             return;
-                        case 'marker':
-                            if (shape) shape = null;
-                            shape = drawing.circle().draw({ snapToGrid: 20 }).attr('stroke-width', 1).attr('fill', 'none');
+                        case 'line':
+                            shape = drawing.line().draw({ snapToGrid: 20 }).attr('stroke-width', 2).attr('fill', 'none');
+                            return;
+                        case 'line-red':
+                            shape = drawing.line().draw({ snapToGrid: 20 }).attr({
+                                'stroke': '#AD1414',
+                                'stroke-width': 4,
+                                'fill': 'none'
+                            });
+                            return;
+                        case 'circle-blue':
+                            shape = drawing.circle().draw();
+                            return;
+                        case 'circle-black':
+                            shape = drawing.circle().draw();
                             return;
                         case 'doorway':
-                            if (shape) shape = null;
-                            document.getElementById('rotationButtons').style.display = 'flex';
                             shape = drawing.attr('stroke-width', 1).attr('fill', 'none');
                             return;
                         case 'rect':
-                            if (shape) shape = null;
-                            shape = drawing.rect().attr('stroke-width', 1).attr('fill', 'none');
+                            shape = drawing.rect().attr({
+                                'stroke': '#000',
+                                'stroke-width': 1,
+                                'fill': 'none',
+                            });
+                            return;
+                        case 'cross':
+                            shape = drawing.attr({
+                                'stroke': '#ff0000',
+                                'stroke-width': 4,
+                                'fill': 'none',
+                            });
                             return;
                     }
                 })
             })
 
-            // allow click and drag to draw rectangle
-            drawing.on('mousedown', (e) => {
+            // allow rectangle drawing on mobile
+            drawing.on('touchdown', (e) => {
                 if (activeShape === 'rect') {
-                    shape && shape.draw(e, { snapToGrid: 20 });
+                    shape && shape.draw(e, { snapToGrid: 20 }).attr({
+                        'fill': 'none',
+                        'stroke': '#000',
+                        'stroke-width': 1,
+                    });
                 }
             });
-
             // end click and draw for rectangle
-            drawing.on('mouseup', (e) => {
+            drawing.on('touchup', (e) => {
                 if (shape && activeShape === 'rect') {
                     shape.draw('stop');
                     document.querySelector(`button[value=${activeShape}]`).classList.toggle('active');
@@ -161,13 +190,54 @@
                     shape = null;
                     activeShape = null;
                 }
-                document.removeEventListener('keydown', () => { })
+            });
+
+            // click and drag to draw rectangle on web
+            drawing.on('mousedown', (e) => {
+                if (activeShape === 'rect') {
+                    shape && shape.draw(e, { snapToGrid: 20 }).attr({
+                        'fill': 'none',
+                        'stroke': '#000',
+                        'stroke-width': 1,
+                    });
+                }
+                if (activeShape === 'line') {
+                    if (shape) {
+                        shape.on('drawstop', event => {
+                            shape.draw('stop');
+                            shape = drawing.line().draw({ snapToGrid: 20 }).attr('stroke-width', 2).attr('fill', 'none');
+                        })
+                    }
+                }
+                if (activeShape === 'line-red') {
+                    if (shape) {
+                        shape.on('drawstop', event => {
+                            shape.draw('stop');
+                            shape = drawing.line().draw({ snapToGrid: 20 }).attr({
+                                'stroke': '#AD1414',
+                                'stroke-width': 4,
+                                'fill': 'none'
+                            });
+                        })
+                    }
+                }
+            });
+
+            // end click and draw for rectangle
+            drawing.on('mouseup', (e) => {
+                if (shape && activeShape === 'rect') {
+                    shape.draw('stop');
+                    document.querySelector(`img[id=${activeShape}]`).classList.toggle('active');
+                    shapes.push(shape);
+                    shape = null;
+                    activeShape = null;
+                }
             });
 
             // listen for a click on the canvas
             drawing.on('click', (event) => {
                 let { offsetX, offsetY } = event;
-                if (activeShape === 'marker' || activeShape === 'doorway') {
+                if (activeShape === 'circle-blue' || activeShape === 'circle-black' || activeShape === 'cross') {
                     placeIconAtCursor(offsetX - 10, offsetY - 10);
                     return;
                 }
@@ -175,7 +245,7 @@
 
             //  place the type of icon at the location of the click
             const placeIconAtCursor = (x, y) => {
-                if (activeShape === 'marker') {
+                if (activeShape === 'circle-blue') {
                     shape = drawing
                         .circle()
                         .draw()
@@ -188,6 +258,35 @@
                         })
                     shapes.push(shape);
                     shape.draw('stop');
+                    shape = null;
+                    return;
+                }
+                if (activeShape === 'circle-black') {
+                    shape = drawing
+                        .circle()
+                        .draw()
+                        .radius(9)
+                        .move(x, y)
+                        .attr({
+                            'stroke': '#333',
+                            'stroke-width': 2,
+                            'fill': 'none'
+                        });
+                    shapes.push(shape);
+                    shape.draw('stop');
+                    shape = null;
+                    return;
+                }
+                if (activeShape === 'cross') {
+                    shape = drawing
+                        .path("M 10,10 l 15,15M 25,10 l -15,15")
+                        .move(x + 2, y + 2)
+                        .attr({
+                            'stroke': '#ff0000',
+                            'stroke-width': 5,
+                            'fill': 'none'
+                        });
+                    shapes.push(shape);
                     shape = null;
                     return;
                 }
@@ -210,10 +309,6 @@
             // complete the current polygon shape
             const confirmCurrentShape = () => {
                 if (shape) {
-                    document.querySelector('button[id=confirm]').style.display = 'none';
-                    document.querySelector('button[value=polygon]').style.display = 'block';
-                    document.querySelector('button[value=polygon]').style.background = '#333';
-                    shape.draw('done');
                     shapes.push(shape);
                     activeShape = null;
                     shape = null;
