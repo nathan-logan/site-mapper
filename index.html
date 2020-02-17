@@ -205,6 +205,7 @@
                     if (shape) {
                         shape.on('drawstop', event => {
                             shape.draw('stop');
+                            shapes.push(shape);
                             shape = drawing.line().draw({ snapToGrid: 20 }).attr('stroke-width', 2).attr('fill', 'none');
                         })
                     }
@@ -213,6 +214,7 @@
                     if (shape) {
                         shape.on('drawstop', event => {
                             shape.draw('stop');
+                            shapes.push(shape);
                             shape = drawing.line().draw({ snapToGrid: 20 }).attr({
                                 'stroke': '#AD1414',
                                 'stroke-width': 4,
